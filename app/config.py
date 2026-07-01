@@ -15,6 +15,14 @@ class Settings(BaseSettings):
     llm_provider: str = "fake"
     log_level: str = "INFO"
     metrics_enabled: bool = True
+    extended_examples_key: str | None = None
+
+    @field_validator("extended_examples_key", mode="before")
+    @classmethod
+    def _empty_extended_examples_key_is_none(cls, value: object) -> str | None:
+        if value is None or value == "":
+            return None
+        return str(value)
 
     @field_validator("database_url", mode="before")
     @classmethod

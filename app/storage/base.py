@@ -40,9 +40,16 @@ class TaskRepository(Protocol):
         limit: int = 100,
     ) -> list[dict[str, Any]]: ...
 
-    def list_examples(self, *, active_only: bool = True) -> list[dict[str, Any]]: ...
+    def list_examples(
+        self,
+        *,
+        active_only: bool = True,
+        include_extended: bool = False,
+    ) -> list[dict[str, Any]]: ...
 
-    def get_example(self, example_id: str) -> dict[str, str] | None: ...
+    def get_example(
+        self, example_id: str, *, include_extended: bool = False
+    ) -> dict[str, str] | None: ...
 
     def log_event(
         self,

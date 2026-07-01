@@ -6,7 +6,7 @@ import time
 from contextlib import asynccontextmanager
 from uuid import UUID, uuid4
 
-from fastapi import FastAPI, Query, Request, Response
+from fastapi import FastAPI, Header, Query, Request, Response
 from starlette.routing import Match
 
 from app import generator, verifier
@@ -32,8 +32,44 @@ from app.models import (
 from app.storage.factory import get_repository, init_repository, reset_repository
 from app.structured_log import configure_logging
 from app.structured_log import log as log_stdout
+from app.task_types import ALL_TASK_TYPES, extended_access_granted, is_extended_task_type
 
 _MAX_GENERATION_ATTEMPTS = 10
+_EXTENDED_KEY_HEADER = "X-Extended-Examples-Key"
+
+
+def _resolve_extended_access(extended_key: str | None) -> bool:
+    return extended_access_granted(extended_key)
+
+
+def _require_extended_access(extended_key: str | None) -> None:
+    if not _resolve_extended_access(extended_key):
+        raise AppHTTPException(
+            status_code=403,
+            code="extended_access_required",
+            message="Для этого типа заданий нужен ключ расширенных примеров",
+        )
+
+
+def _generate_task_with_retries(task_type: str) -> generator.GeneratedTask:
+    for attempt in range(1, _MAX_GENERATION_ATTEMPTS + 1):
+        task = generator.generate_task(task_type)  # type: ignore[arg-type]
+        if verifier.verify_task(task.statement, task.answer):
+            record_generation_attempt("success")
+            return task
+        record_generation_attempt("verifier_rejected")
+        log_event(
+            "WARNING",
+            "generation_failed",
+            payload={"attempt": attempt, "task_type": task_type},
+        )
+    record_generation_attempt("exhausted")
+    log_event("ERROR", "generation_exhausted", payload={"attempts": _MAX_GENERATION_ATTEMPTS})
+    raise AppHTTPException(
+        status_code=500,
+        code="generation_failed",
+        message="Не удалось сгенерировать валидное задание",
+    )
 
 
 def _resolve_route_path(request: Request) -> str:
@@ -115,36 +151,37 @@ def metrics() -> Response:
 
 
 @app.post("/tasks", response_model=TaskView)
-def create_task() -> TaskView:
+def create_task(
+    task_type: str = Query(default="quadratic", description="Тип задания"),
+    extended_key: str | None = Header(default=None, alias=_EXTENDED_KEY_HEADER),
+) -> TaskView:
     """Сгенерировать новое задание и вернуть его условие (без ответа)."""
-    repo = get_repository()
-    for attempt in range(1, _MAX_GENERATION_ATTEMPTS + 1):
-        task = generator.generate_quadratic()
-        if verifier.verify_task(task.statement, task.answer):
-            task_id = repo.save_task(task.statement, task.answer)
-            record_generation_attempt("success")
-            log_event("INFO", "task_created", task_id=task_id, attempt=attempt)
-            return TaskView(id=task_id, statement=task.statement)
-        record_generation_attempt("verifier_rejected")
-        log_event(
-            "WARNING",
-            "generation_failed",
-            payload={"attempt": attempt, "task_type": "quadratic"},
+    if task_type not in ALL_TASK_TYPES:
+        raise AppHTTPException(
+            status_code=422,
+            code="invalid_task_type",
+            message=f"Неизвестный тип задания: {task_type}",
+            field="task_type",
         )
-    record_generation_attempt("exhausted")
-    log_event("ERROR", "generation_exhausted", payload={"attempts": _MAX_GENERATION_ATTEMPTS})
-    raise AppHTTPException(
-        status_code=500,
-        code="generation_failed",
-        message="Не удалось сгенерировать валидное задание",
-    )
+    if is_extended_task_type(task_type):
+        _require_extended_access(extended_key)
+
+    repo = get_repository()
+    task = _generate_task_with_retries(task_type)
+    task_id = repo.save_task(task.statement, task.answer, task_type=task.task_type)
+    log_event("INFO", "task_created", task_id=task_id)
+    return TaskView(id=task_id, statement=task.statement)
 
 
 @app.post("/tasks/from-example/{example_id}", response_model=TaskView)
-def create_task_from_example(example_id: UUID) -> TaskView:
+def create_task_from_example(
+    example_id: UUID,
+    extended_key: str | None = Header(default=None, alias=_EXTENDED_KEY_HEADER),
+) -> TaskView:
     """Создать задание из заранее подготовленного примера"""
+    include_extended = _resolve_extended_access(extended_key)
     repo = get_repository()
-    example = repo.get_example(str(example_id))
+    example = repo.get_example(str(example_id), include_extended=include_extended)
     if example is None:
         raise AppHTTPException(
             status_code=404,
@@ -167,10 +204,13 @@ def create_task_from_example(example_id: UUID) -> TaskView:
 
 
 @app.get("/examples", response_model=list[ExampleView])
-def list_examples() -> list[ExampleView]:
+def list_examples(
+    extended_key: str | None = Header(default=None, alias=_EXTENDED_KEY_HEADER),
+) -> list[ExampleView]:
     """Список демонстрационных примеров (без эталонного ответа)."""
     repo = get_repository()
-    return [ExampleView(**item) for item in repo.list_examples()]
+    include_extended = _resolve_extended_access(extended_key)
+    return [ExampleView(**item) for item in repo.list_examples(include_extended=include_extended)]
 
 
 @app.post("/tasks/{task_id}/grade", response_model=GradeResponse)

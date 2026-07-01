@@ -19,7 +19,7 @@ _X = sympy.symbols("x")
 
 def _extract_equation(statement: str) -> str:
     """Достать уравнение из текста условия и привести к sympy-синтаксису"""
-    m = re.search(r":\s*(.+?=\s*0)", statement)
+    m = re.search(r"Решите уравнение:\s*(.+?)\.\s*В ответ", statement)
     if not m:
         raise ValueError(f"не удалось найти уравнение в условии: {statement!r}")
     eq = m.group(1).replace("^", "**")

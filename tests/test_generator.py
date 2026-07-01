@@ -18,7 +18,7 @@ _X = sympy.symbols("x")
 
 def _real_roots_from_statement(statement: str) -> list[int]:
     """Независимый разбор условия: достаём уравнение и решаем его через sympy."""
-    m = re.search(r":\s*(.+?=\s*0)", statement)
+    m = re.search(r"Решите уравнение:\s*(.+?)\.\s*В ответ", statement)
     assert m, f"не удалось найти уравнение в условии: {statement!r}"
     eq = m.group(1).replace("^", "**")
     eq = re.sub(r"(\d)\s*x", r"\1*x", eq)  # '5x' -> '5*x'
@@ -36,3 +36,19 @@ def test_declared_answer_actually_solves_equation():
             f"seed={seed}: условие {task.statement!r} -> "
             f"задекларирован ответ {declared}, реальные корни {real_roots}"
         )
+
+
+def test_linear_generator_matches_sympy():
+    for seed in range(25):
+        task = generator.generate_linear(seed=seed)
+        real_roots = _real_roots_from_statement(task.statement)
+        declared = sorted(int(p) for p in task.answer.split(";") if p.strip())
+        assert declared == real_roots
+
+
+def test_rational_generator_matches_sympy():
+    for seed in range(25):
+        task = generator.generate_rational(seed=seed)
+        real_roots = _real_roots_from_statement(task.statement)
+        declared = sorted(int(p) for p in task.answer.split(";") if p.strip())
+        assert declared == real_roots

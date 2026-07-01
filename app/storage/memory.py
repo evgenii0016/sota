@@ -6,6 +6,8 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
+from app.task_types import is_extended_task_type
+
 
 class MemoryRepository:
     def __init__(self) -> None:
@@ -93,10 +95,17 @@ class MemoryRepository:
         items = sorted(items, key=lambda item: item["created_at"], reverse=True)
         return [dict(item) for item in items[:limit]]
 
-    def list_examples(self, *, active_only: bool = True) -> list[dict[str, Any]]:
+    def list_examples(
+        self,
+        *,
+        active_only: bool = True,
+        include_extended: bool = False,
+    ) -> list[dict[str, Any]]:
         items = list(self._examples.values())
         if active_only:
             items = [item for item in items if item.get("is_active", True)]
+        if not include_extended:
+            items = [item for item in items if not is_extended_task_type(item["task_type"])]
         return [
             {
                 "id": item["id"],
@@ -108,8 +117,17 @@ class MemoryRepository:
             for item in items
         ]
 
-    def get_example(self, example_id: str) -> dict[str, str] | None:
-        return self._examples.get(example_id)
+    def get_example(
+        self, example_id: str, *, include_extended: bool = False
+    ) -> dict[str, str] | None:
+        example = self._examples.get(example_id)
+        if example is None:
+            return None
+        if not example.get("is_active", True):
+            return None
+        if not include_extended and is_extended_task_type(example["task_type"]):
+            return None
+        return example
 
     def register_example(
         self,

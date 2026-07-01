@@ -62,3 +62,25 @@ def _seed_memory_examples(repo: MemoryRepository) -> None:
         answer="2",
         tags=["double_root"],
     )
+    repo.register_example(
+        example_id="11111111-1111-4111-8111-111111111103",
+        name="Линейное уравнение",
+        statement=(
+            "Решите уравнение: 2x - 6 = 0. "
+            "В ответ запишите все корни через ';' в порядке возрастания."
+        ),
+        answer="3",
+        task_type="linear",
+        tags=["linear"],
+    )
+    repo.register_example(
+        example_id="11111111-1111-4111-8111-111111111104",
+        name="Рациональное уравнение",
+        statement=(
+            "Решите уравнение: (x + 16)/(x + 2) = 3. "
+            "В ответ запишите все корни через ';' в порядке возрастания."
+        ),
+        answer="5",
+        task_type="rational",
+        tags=["rational"],
+    )

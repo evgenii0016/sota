@@ -10,6 +10,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.storage.models_db import AppEvent, Example, GradeAttempt, Task
+from app.task_types import EXTENDED_TASK_TYPES, is_extended_task_type
 
 
 def _parse_uuid(value: str) -> uuid.UUID | None:
@@ -170,11 +171,18 @@ class PostgresRepository:
             "created_at": event.created_at,
         }
 
-    def list_examples(self, *, active_only: bool = True) -> list[dict[str, Any]]:
+    def list_examples(
+        self,
+        *,
+        active_only: bool = True,
+        include_extended: bool = False,
+    ) -> list[dict[str, Any]]:
         with self._session() as session:
             query = select(Example)
             if active_only:
                 query = query.where(Example.is_active.is_(True))
+            if not include_extended:
+                query = query.where(Example.task_type.not_in(tuple(EXTENDED_TASK_TYPES)))
             query = query.order_by(Example.created_at)
             examples = session.scalars(query).all()
             return [
@@ -188,13 +196,17 @@ class PostgresRepository:
                 for example in examples
             ]
 
-    def get_example(self, example_id: str) -> dict[str, str] | None:
+    def get_example(
+        self, example_id: str, *, include_extended: bool = False
+    ) -> dict[str, str] | None:
         example_uuid = _parse_uuid(example_id)
         if example_uuid is None:
             return None
         with self._session() as session:
             example = session.get(Example, example_uuid)
             if example is None or not example.is_active:
+                return None
+            if not include_extended and is_extended_task_type(example.task_type):
                 return None
             return {
                 "id": str(example.id),

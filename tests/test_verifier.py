@@ -59,6 +59,23 @@ def test_verify_student_answer_correct():
     assert result.status == "correct"
 
 
+def test_verify_rational_equation():
+    statement = (
+        "Решите уравнение: (x + 16)/(x + 2) = 3. "
+        "В ответ запишите все корни через ';' в порядке возрастания."
+    )
+    assert verifier.solve_from_statement(statement) == ["5"]
+    assert verifier.verify_task(statement, "5") is True
+
+
+def test_verify_linear_equation():
+    statement = (
+        "Решите уравнение: 2x - 6 = 0. В ответ запишите все корни через ';' в порядке возрастания."
+    )
+    assert verifier.solve_from_statement(statement) == ["3"]
+    assert verifier.verify_task(statement, "3") is True
+
+
 def test_verify_rejects_invalid_answer_format():
     assert verifier.verify_task(_STATEMENT, "abc") is False
     assert verifier.verify_task(_STATEMENT, "") is False
@@ -66,5 +83,10 @@ def test_verify_rejects_invalid_answer_format():
 
 def test_generator_tasks_pass_verifier():
     for seed in range(25):
-        task = generator.generate_quadratic(seed=seed)
-        assert verifier.verify_task(task.statement, task.answer) is True
+        for generate in (
+            generator.generate_quadratic,
+            generator.generate_linear,
+            generator.generate_rational,
+        ):
+            task = generate(seed=seed)
+            assert verifier.verify_task(task.statement, task.answer) is True
