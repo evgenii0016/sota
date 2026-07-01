@@ -1,20 +1,13 @@
-"""In-memory хранилище заданий.
-
-Для тестового задания этого достаточно — реальная БД не требуется.
-"""
+"""Тонкая обёртка над storage для обратной совместимости"""
 
 from __future__ import annotations
 
-import uuid
-
-_tasks: dict[str, dict] = {}
+from app.storage.factory import get_repository
 
 
-def save_task(statement: str, answer: str) -> str:
-    task_id = str(uuid.uuid4())
-    _tasks[task_id] = {"statement": statement, "answer": answer}
-    return task_id
+def save_task(statement: str, answer: str, task_type: str = "quadratic") -> str:
+    return get_repository().save_task(statement, answer, task_type)
 
 
 def get_task(task_id: str) -> dict | None:
-    return _tasks.get(task_id)
+    return get_repository().get_task(task_id)

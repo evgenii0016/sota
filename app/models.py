@@ -1,6 +1,9 @@
-"""Pydantic-схемы API."""
+"""Pydantic-схемы API"""
 
 from __future__ import annotations
+
+from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -18,3 +21,31 @@ class GradeRequest(BaseModel):
 class GradeResponse(BaseModel):
     is_correct: bool
     feedback: str
+
+
+class ExampleView(BaseModel):
+    id: str
+    name: str
+    task_type: str
+    statement: str
+    tags: list[str] = []
+
+
+class GradeAttemptView(BaseModel):
+    id: str
+    task_id: str
+    student_answer: str
+    is_correct: bool
+    feedback: str
+    llm_provider: str | None = None
+    duration_ms: int | None = None
+    created_at: datetime | None = None
+
+
+class AppEventView(BaseModel):
+    id: int
+    level: str
+    event: str
+    task_id: str | None = None
+    payload: dict[str, Any] = {}
+    created_at: datetime | None = None
