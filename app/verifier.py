@@ -7,6 +7,8 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
+from typing import Literal
 
 import sympy
 
@@ -56,6 +58,49 @@ def solve_from_statement(statement: str) -> list[str]:
         raise ValueError("уравнение не имеет действительных корней")
     roots = _sort_roots({_format_root(s) for s in real_solutions})
     return roots
+
+
+@dataclass(frozen=True)
+class VerifyResult:
+    is_correct: bool
+    status: Literal["correct", "wrong", "wrong_root_count"]
+    true_roots: list[str] | None = None
+    parsed_roots: list[str] | None = None
+
+
+def verify_student_answer(statement: str, student_answer: str) -> VerifyResult:
+    """Сверить ответ ученика с корнями, вычисленными из условия"""
+    try:
+        true_roots = solve_from_statement(statement)
+    except (ValueError, sympy.SympifyError):
+        return VerifyResult(is_correct=False, status="wrong")
+
+    parsed_roots = _parse_answer(student_answer)
+    if parsed_roots is None:
+        return VerifyResult(is_correct=False, status="wrong")
+
+    if len(parsed_roots) != len(true_roots):
+        return VerifyResult(
+            is_correct=False,
+            status="wrong_root_count",
+            true_roots=true_roots,
+            parsed_roots=parsed_roots,
+        )
+
+    if parsed_roots == true_roots:
+        return VerifyResult(
+            is_correct=True,
+            status="correct",
+            true_roots=true_roots,
+            parsed_roots=parsed_roots,
+        )
+
+    return VerifyResult(
+        is_correct=False,
+        status="wrong",
+        true_roots=true_roots,
+        parsed_roots=parsed_roots,
+    )
 
 
 def verify_task(statement: str, declared_answer: str) -> bool:

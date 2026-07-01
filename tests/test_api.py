@@ -18,5 +18,9 @@ def test_create_task_returns_statement_without_answer():
 
 
 def test_grade_unknown_task_returns_404():
-    r = client.post("/tasks/does-not-exist/grade", json={"answer": "1;2"})
+    r = client.post(
+        "/tasks/00000000-0000-4000-8000-000000000099/grade",
+        json={"answer": "1;2"},
+    )
     assert r.status_code == 404
+    assert r.json()["code"] == "task_not_found"

@@ -28,8 +28,9 @@ def test_create_task_from_example():
 
 
 def test_create_task_from_unknown_example_returns_404():
-    r = client.post("/tasks/from-example/does-not-exist")
+    r = client.post("/tasks/from-example/00000000-0000-4000-8000-000000000099")
     assert r.status_code == 404
+    assert r.json()["code"] == "example_not_found"
 
 
 def test_memory_repository_persists_grade_attempts():
@@ -61,7 +62,7 @@ def test_list_task_attempts_after_grade():
 
 def test_get_attempt_by_id():
     task = client.post("/tasks").json()
-    client.post(f"/tasks/{task['id']}/grade", json={"answer": "wrong"})
+    client.post(f"/tasks/{task['id']}/grade", json={"answer": "99"})
     attempt_id = client.get(f"/tasks/{task['id']}/attempts").json()[0]["id"]
     r = client.get(f"/attempts/{attempt_id}")
     assert r.status_code == 200
@@ -69,13 +70,15 @@ def test_get_attempt_by_id():
 
 
 def test_get_unknown_attempt_returns_404():
-    r = client.get("/attempts/does-not-exist")
+    r = client.get("/attempts/00000000-0000-4000-8000-000000000099")
     assert r.status_code == 404
+    assert r.json()["code"] == "attempt_not_found"
 
 
 def test_list_task_attempts_unknown_task_returns_404():
-    r = client.get("/tasks/does-not-exist/attempts")
+    r = client.get("/tasks/00000000-0000-4000-8000-000000000099/attempts")
     assert r.status_code == 404
+    assert r.json()["code"] == "task_not_found"
 
 
 def test_list_events_returns_grade_completed():
@@ -101,8 +104,8 @@ def test_grade_deduplicates_same_answer_without_second_llm_call(monkeypatch):
     monkeypatch.setattr("app.main.grade_answer", counting_grade_answer)
 
     task = client.post("/tasks").json()
-    first = client.post(f"/tasks/{task['id']}/grade", json={"answer": "wrong-answer"})
-    second = client.post(f"/tasks/{task['id']}/grade", json={"answer": "wrong-answer"})
+    first = client.post(f"/tasks/{task['id']}/grade", json={"answer": "99;100"})
+    second = client.post(f"/tasks/{task['id']}/grade", json={"answer": "99;100"})
 
     assert first.status_code == 200
     assert second.status_code == 200
@@ -129,7 +132,7 @@ def test_grade_different_answers_call_llm_twice(monkeypatch):
     monkeypatch.setattr("app.main.grade_answer", counting_grade_answer)
 
     task = client.post("/tasks").json()
-    client.post(f"/tasks/{task['id']}/grade", json={"answer": "wrong-1"})
-    client.post(f"/tasks/{task['id']}/grade", json={"answer": "wrong-2"})
+    client.post(f"/tasks/{task['id']}/grade", json={"answer": "98"})
+    client.post(f"/tasks/{task['id']}/grade", json={"answer": "97"})
 
     assert call_count == 2

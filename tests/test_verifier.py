@@ -46,6 +46,19 @@ def test_verify_no_real_roots():
     assert verifier.verify_task(_NO_REAL_ROOTS_STATEMENT, "") is False
 
 
+def test_verify_student_answer_wrong_root_count():
+    result = verifier.verify_student_answer(_STATEMENT, "2")
+    assert result.is_correct is False
+    assert result.status == "wrong_root_count"
+    assert result.true_roots == ["2", "3"]
+
+
+def test_verify_student_answer_correct():
+    result = verifier.verify_student_answer(_STATEMENT, "3;2")
+    assert result.is_correct is True
+    assert result.status == "correct"
+
+
 def test_verify_rejects_invalid_answer_format():
     assert verifier.verify_task(_STATEMENT, "abc") is False
     assert verifier.verify_task(_STATEMENT, "") is False

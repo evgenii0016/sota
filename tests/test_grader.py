@@ -28,6 +28,26 @@ def test_grade_wrong_answer_uses_verifier_not_llm():
     assert result["feedback"] == "Ответ выглядит правильным."
 
 
+def test_grade_wrong_root_count_skips_llm(monkeypatch):
+    class FailingLLM(FakeLLM):
+        def complete(self, system: str, user: str) -> str:
+            raise AssertionError("LLM should not be called for wrong root count")
+
+    result = grade_answer(FailingLLM(), _STATEMENT, "2;3", "2")
+    assert result["is_correct"] is False
+    assert "2" in result["feedback"] and "корн" in result["feedback"].lower()
+
+
+def test_grade_wrong_root_count_single_root():
+    statement = (
+        "Решите уравнение: x^2 - 4x + 4 = 0. "
+        "В ответ запишите все корни через ';' в порядке возрастания."
+    )
+    result = grade_answer(FakeLLM(), statement, "2", "2;3")
+    assert result["is_correct"] is False
+    assert "один корень" in result["feedback"]
+
+
 def test_grade_api_rejects_wrong_answer_despite_fake_llm():
     task = client.post("/tasks").json()
     r = client.post(f"/tasks/{task['id']}/grade", json={"answer": "1;6"})

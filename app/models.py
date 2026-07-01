@@ -5,7 +5,9 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
+
+from app.validation import validate_student_answer
 
 
 class TaskView(BaseModel):
@@ -15,7 +17,24 @@ class TaskView(BaseModel):
 
 
 class GradeRequest(BaseModel):
-    answer: str
+    answer: str = Field(
+        ...,
+        min_length=1,
+        description="Корни уравнения через ';', например: 2;3",
+        examples=["2;3"],
+    )
+
+    @field_validator("answer", mode="before")
+    @classmethod
+    def strip_answer(cls, value: object) -> object:
+        if isinstance(value, str):
+            return value.strip()
+        return value
+
+    @field_validator("answer")
+    @classmethod
+    def check_answer_format(cls, value: str) -> str:
+        return validate_student_answer(value)
 
 
 class GradeResponse(BaseModel):
