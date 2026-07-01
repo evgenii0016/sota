@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import time
 from contextlib import asynccontextmanager
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request, Response
+from starlette.routing import Match
 
 from app import generator, verifier
 from app.config import get_settings
@@ -14,6 +15,12 @@ from app.errors import AppHTTPException, register_exception_handlers
 from app.grader import grade_answer
 from app.llm import get_llm
 from app.logging_events import log_event
+from app.metrics import (
+    metrics_payload,
+    record_generation_attempt,
+    record_grade,
+    record_http_request,
+)
 from app.models import (
     AppEventView,
     ExampleView,
@@ -23,13 +30,32 @@ from app.models import (
     TaskView,
 )
 from app.storage.factory import get_repository, init_repository, reset_repository
+from app.structured_log import configure_logging
+from app.structured_log import log as log_stdout
 
 _MAX_GENERATION_ATTEMPTS = 10
 
 
+def _resolve_route_path(request: Request) -> str:
+    for route in request.app.routes:
+        match, _ = route.matches(request.scope)
+        if match == Match.FULL:
+            return getattr(route, "path", request.url.path)
+    return request.url.path
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    settings = get_settings()
+    configure_logging(settings.log_level)
     init_repository()
+    log_stdout(
+        "INFO",
+        "app_started",
+        storage="postgres" if settings.uses_postgres else "memory",
+        llm_provider=settings.llm_provider,
+        metrics_enabled=settings.metrics_enabled,
+    )
     yield
     reset_repository()
 
@@ -41,6 +67,53 @@ llm = get_llm()
 settings = get_settings()
 
 
+@app.middleware("http")
+async def observability_middleware(request: Request, call_next):
+    if request.url.path == "/metrics":
+        return await call_next(request)
+
+    request_id = request.headers.get("X-Request-ID") or str(uuid4())
+    request.state.request_id = request_id
+    route_path = _resolve_route_path(request)
+    started = time.perf_counter()
+
+    response = await call_next(request)
+    duration_seconds = time.perf_counter() - started
+
+    if settings.metrics_enabled:
+        record_http_request(
+            method=request.method,
+            path=route_path,
+            status_code=response.status_code,
+            duration_seconds=duration_seconds,
+        )
+
+    log_stdout(
+        "INFO",
+        "http_request",
+        request_id=request_id,
+        method=request.method,
+        path=route_path,
+        status_code=response.status_code,
+        duration_ms=int(duration_seconds * 1000),
+    )
+    response.headers["X-Request-ID"] = request_id
+    return response
+
+
+@app.get("/metrics")
+def metrics() -> Response:
+    """Prometheus-метрики для мониторинга качества проверки."""
+    if not settings.metrics_enabled:
+        raise AppHTTPException(
+            status_code=404,
+            code="metrics_disabled",
+            message="Метрики отключены",
+        )
+    payload, content_type = metrics_payload()
+    return Response(content=payload, media_type=content_type)
+
+
 @app.post("/tasks", response_model=TaskView)
 def create_task() -> TaskView:
     """Сгенерировать новое задание и вернуть его условие (без ответа)."""
@@ -49,13 +122,16 @@ def create_task() -> TaskView:
         task = generator.generate_quadratic()
         if verifier.verify_task(task.statement, task.answer):
             task_id = repo.save_task(task.statement, task.answer)
+            record_generation_attempt("success")
             log_event("INFO", "task_created", task_id=task_id, attempt=attempt)
             return TaskView(id=task_id, statement=task.statement)
+        record_generation_attempt("verifier_rejected")
         log_event(
             "WARNING",
             "generation_failed",
             payload={"attempt": attempt, "task_type": "quadratic"},
         )
+    record_generation_attempt("exhausted")
     log_event("ERROR", "generation_exhausted", payload={"attempts": _MAX_GENERATION_ATTEMPTS})
     raise AppHTTPException(
         status_code=500,
@@ -115,6 +191,8 @@ def grade(task_id: UUID, body: GradeRequest) -> GradeResponse:
         llm_provider=settings.llm_provider,
     )
     if cached is not None:
+        verify_status = "correct" if cached["is_correct"] else "unknown"
+        feedback_source = "correct" if cached["is_correct"] else "cached"
         repo.save_grade_attempt(
             str(task_id),
             body.answer,
@@ -123,12 +201,23 @@ def grade(task_id: UUID, body: GradeRequest) -> GradeResponse:
             llm_provider=settings.llm_provider,
             duration_ms=0,
         )
+        if settings.metrics_enabled:
+            record_grade(
+                is_correct=cached["is_correct"],
+                verify_status=verify_status,
+                cached=True,
+                llm_provider=settings.llm_provider,
+                feedback_source=feedback_source,
+                duration_seconds=0.0,
+            )
         log_event(
             "INFO",
             "grade_cached",
             task_id=str(task_id),
             is_correct=cached["is_correct"],
             llm_provider=settings.llm_provider,
+            verify_status=verify_status,
+            feedback_source=feedback_source,
         )
         return GradeResponse(
             is_correct=cached["is_correct"],
@@ -136,26 +225,45 @@ def grade(task_id: UUID, body: GradeRequest) -> GradeResponse:
         )
 
     started = time.perf_counter()
-    result = grade_answer(llm, task["statement"], task["answer"], body.answer)
+    result = grade_answer(
+        llm,
+        task["statement"],
+        task["answer"],
+        body.answer,
+        llm_provider=settings.llm_provider,
+    )
     duration_ms = int((time.perf_counter() - started) * 1000)
 
     repo.save_grade_attempt(
         str(task_id),
         body.answer,
-        is_correct=result["is_correct"],
-        feedback=result["feedback"],
+        is_correct=result.is_correct,
+        feedback=result.feedback,
         llm_provider=settings.llm_provider,
         duration_ms=duration_ms,
     )
+    if settings.metrics_enabled:
+        record_grade(
+            is_correct=result.is_correct,
+            verify_status=result.verify_status,
+            cached=False,
+            llm_provider=settings.llm_provider,
+            feedback_source=result.feedback_source,
+            duration_seconds=duration_ms / 1000,
+        )
     log_event(
         "INFO",
         "grade_completed",
         task_id=str(task_id),
-        is_correct=result["is_correct"],
+        is_correct=result.is_correct,
         llm_provider=settings.llm_provider,
         duration_ms=duration_ms,
+        verify_status=result.verify_status,
+        feedback_source=result.feedback_source,
+        llm_duration_ms=result.llm_duration_ms,
+        cached=False,
     )
-    return GradeResponse(**result)
+    return GradeResponse(**result.as_api_dict())
 
 
 @app.get("/tasks/{task_id}/attempts", response_model=list[GradeAttemptView])

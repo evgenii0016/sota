@@ -13,6 +13,8 @@ class Settings(BaseSettings):
 
     database_url: str | None = None
     llm_provider: str = "fake"
+    log_level: str = "INFO"
+    metrics_enabled: bool = True
 
     @field_validator("database_url", mode="before")
     @classmethod

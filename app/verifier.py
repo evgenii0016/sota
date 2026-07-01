@@ -12,6 +12,8 @@ from typing import Literal
 
 import sympy
 
+from app.metrics import observe_verify
+
 _X = sympy.symbols("x")
 
 
@@ -105,11 +107,12 @@ def verify_student_answer(statement: str, student_answer: str) -> VerifyResult:
 
 def verify_task(statement: str, declared_answer: str) -> bool:
     """True, если declared_answer совпадает с реально вычисленными корнями"""
-    try:
-        true_roots = solve_from_statement(statement)
-    except (ValueError, sympy.SympifyError):
-        return False
-    declared_roots = _parse_answer(declared_answer)
-    if declared_roots is None:
-        return False
-    return declared_roots == true_roots
+    with observe_verify("task"):
+        try:
+            true_roots = solve_from_statement(statement)
+        except (ValueError, sympy.SympifyError):
+            return False
+        declared_roots = _parse_answer(declared_answer)
+        if declared_roots is None:
+            return False
+        return declared_roots == true_roots

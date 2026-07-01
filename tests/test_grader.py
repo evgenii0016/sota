@@ -19,13 +19,18 @@ client = TestClient(app)
 
 def test_grade_correct_answer_without_llm_explanation():
     result = grade_answer(FakeLLM(), _STATEMENT, "2;3", "3;2")
-    assert result == {"is_correct": True, "feedback": "Верно."}
+    assert result.is_correct is True
+    assert result.feedback == "Верно."
+    assert result.verify_status == "correct"
+    assert result.feedback_source == "correct"
 
 
 def test_grade_wrong_answer_uses_verifier_not_llm():
     result = grade_answer(FakeLLM(), _STATEMENT, "2;3", "1;6")
-    assert result["is_correct"] is False
-    assert result["feedback"] == "Ответ выглядит правильным."
+    assert result.is_correct is False
+    assert result.feedback == "Ответ выглядит правильным."
+    assert result.verify_status == "wrong"
+    assert result.feedback_source == "llm"
 
 
 def test_grade_wrong_root_count_skips_llm(monkeypatch):
@@ -34,8 +39,9 @@ def test_grade_wrong_root_count_skips_llm(monkeypatch):
             raise AssertionError("LLM should not be called for wrong root count")
 
     result = grade_answer(FailingLLM(), _STATEMENT, "2;3", "2")
-    assert result["is_correct"] is False
-    assert "2" in result["feedback"] and "корн" in result["feedback"].lower()
+    assert result.is_correct is False
+    assert "2" in result.feedback and "корн" in result.feedback.lower()
+    assert result.feedback_source == "template_wrong_root_count"
 
 
 def test_grade_wrong_root_count_single_root():
@@ -44,8 +50,8 @@ def test_grade_wrong_root_count_single_root():
         "В ответ запишите все корни через ';' в порядке возрастания."
     )
     result = grade_answer(FakeLLM(), statement, "2", "2;3")
-    assert result["is_correct"] is False
-    assert "один корень" in result["feedback"]
+    assert result.is_correct is False
+    assert "один корень" in result.feedback
 
 
 def test_grade_api_rejects_wrong_answer_despite_fake_llm():

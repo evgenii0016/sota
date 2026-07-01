@@ -9,6 +9,9 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from app.metrics import record_validation_error
+from app.structured_log import log as log_stdout
+
 
 class ErrorResponse(BaseModel):
     code: str
@@ -60,11 +63,19 @@ def _validation_message(error: dict[str, Any]) -> tuple[str, str, str | None]:
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(RequestValidationError)
     async def request_validation_handler(
-        _: Request,
+        request: Request,
         exc: RequestValidationError,
     ) -> JSONResponse:
         first = exc.errors()[0] if exc.errors() else {}
         code, message, field = _validation_message(first)
+        record_validation_error(code)
+        log_stdout(
+            "WARNING",
+            "validation_error",
+            code=code,
+            field=field,
+            path=request.url.path,
+        )
         return JSONResponse(
             status_code=422,
             content=ErrorResponse(code=code, message=message, field=field).model_dump(),
