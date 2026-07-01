@@ -1,24 +1,57 @@
-"""Тесты независимого верификатора.
-
-Сейчас пропущены — включите их (уберите skip) и доведите до зелёного, когда
-реализуете app/verifier.py. Допишите свои случаи: дробные/отсутствующие корни,
-неверный формат ответа ученика и т. п.
-"""
+"""Тесты независимого верификатора."""
 
 from __future__ import annotations
 
 import pytest
 
-from app import verifier
+from app import generator, verifier
 
-pytestmark = pytest.mark.skip(reason="TODO: реализуйте app/verifier.py и включите эти тесты")
+_STATEMENT = (
+    "Решите уравнение: x^2 - 5x + 6 = 0. "
+    "В ответ запишите все корни через ';' в порядке возрастания."
+)
+_DOUBLE_ROOT_STATEMENT = (
+    "Решите уравнение: x^2 - 4x + 4 = 0. "
+    "В ответ запишите все корни через ';' в порядке возрастания."
+)
+_NO_REAL_ROOTS_STATEMENT = (
+    "Решите уравнение: x^2 + 1 = 0. В ответ запишите все корни через ';' в порядке возрастания."
+)
 
-_STATEMENT = "Решите уравнение: x^2 - 5x + 6 = 0. В ответ запишите все корни через ';' в порядке возрастания."
+
+def test_solve_from_statement():
+    assert verifier.solve_from_statement(_STATEMENT) == ["2", "3"]
 
 
 def test_verify_accepts_correct_answer():
     assert verifier.verify_task(_STATEMENT, "2;3") is True
 
 
+def test_verify_accepts_answer_with_whitespace_and_wrong_order():
+    assert verifier.verify_task(_STATEMENT, "3 ; 2") is True
+
+
 def test_verify_rejects_wrong_answer():
     assert verifier.verify_task(_STATEMENT, "1;6") is False
+
+
+def test_verify_double_root():
+    assert verifier.solve_from_statement(_DOUBLE_ROOT_STATEMENT) == ["2"]
+    assert verifier.verify_task(_DOUBLE_ROOT_STATEMENT, "2") is True
+
+
+def test_verify_no_real_roots():
+    with pytest.raises(ValueError, match="действительных"):
+        verifier.solve_from_statement(_NO_REAL_ROOTS_STATEMENT)
+    assert verifier.verify_task(_NO_REAL_ROOTS_STATEMENT, "") is False
+
+
+def test_verify_rejects_invalid_answer_format():
+    assert verifier.verify_task(_STATEMENT, "abc") is False
+    assert verifier.verify_task(_STATEMENT, "") is False
+
+
+def test_generator_tasks_pass_verifier():
+    for seed in range(25):
+        task = generator.generate_quadratic(seed=seed)
+        assert verifier.verify_task(task.statement, task.answer) is True

@@ -11,8 +11,8 @@ from dataclasses import dataclass
 
 @dataclass
 class GeneratedTask:
-    statement: str   # условие для ученика
-    answer: str      # эталонный ответ: корни через ';' по возрастанию
+    statement: str  # условие для ученика
+    answer: str  # эталонный ответ: корни через ';' по возрастанию
 
 
 def _fmt(n: int) -> str:
@@ -29,7 +29,7 @@ def generate_quadratic(seed: int | None = None) -> GeneratedTask:
     r1 = rnd.randint(-9, 9)
     r2 = rnd.randint(-9, 9)
 
-    b = r1 + r2
+    b = -(r1 + r2)
     c = r1 * r2
 
     statement = (

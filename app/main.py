@@ -4,22 +4,28 @@ from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException
 
-from app import generator, store
+from app import generator, store, verifier
 from app.grader import grade_answer
-from app.llm import FakeLLM
+from app.llm import get_llm
 from app.models import GradeRequest, GradeResponse, TaskView
 
 app = FastAPI(title="ЕГЭ-математика: генерация + AI-проверка")
 
-llm = FakeLLM()
+llm = get_llm()
+
+
+_MAX_GENERATION_ATTEMPTS = 10
 
 
 @app.post("/tasks", response_model=TaskView)
 def create_task() -> TaskView:
     """Сгенерировать новое задание и вернуть его условие (без ответа)."""
-    task = generator.generate_quadratic()
-    task_id = store.save_task(task.statement, task.answer)
-    return TaskView(id=task_id, statement=task.statement)
+    for _ in range(_MAX_GENERATION_ATTEMPTS):
+        task = generator.generate_quadratic()
+        if verifier.verify_task(task.statement, task.answer):
+            task_id = store.save_task(task.statement, task.answer)
+            return TaskView(id=task_id, statement=task.statement)
+    raise HTTPException(status_code=500, detail="Не удалось сгенерировать валидное задание")
 
 
 @app.post("/tasks/{task_id}/grade", response_model=GradeResponse)
