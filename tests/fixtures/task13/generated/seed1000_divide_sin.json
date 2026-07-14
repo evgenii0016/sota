@@ -1,0 +1,51 @@
+{
+  "name": "seed1000_divide_sin",
+  "corruption": "divide_sin",
+  "generator_seed": 1000,
+  "expected_score": 0,
+  "actual_part_a_correct": true,
+  "actual_part_b_correct": true,
+  "statement": "а) Решите уравнение sin²x - sqrt(3)·sin x/2 + sin x - sqrt(3)/2 = 0.\nб) Найдите корни этого уравнения, принадлежащие отрезку [-17π/6; -5π/3].",
+  "metadata": {
+    "equation": {
+      "latex": "\\sin^{2}{\\left(x \\right)} - \\frac{\\sqrt{3} \\sin{\\left(x \\right)}}{2} + \\sin{\\left(x \\right)} - \\frac{\\sqrt{3}}{2} = 0",
+      "sympy": "sin(x)**2 - sqrt(3)*sin(x)/2 + sin(x) - sqrt(3)/2"
+    },
+    "interval": {
+      "left": "-17*pi/6",
+      "right": "-5*pi/3",
+      "type": "closed",
+      "display": "[-17π/6; -5π/3]"
+    },
+    "part_a": {
+      "series": [
+        {
+          "formula": "pi/3 + 2*pi*n",
+          "param": "n",
+          "display": "x = π/3 + 2πn, n ∈ ℤ"
+        },
+        {
+          "formula": "2*pi/3 + 2*pi*m",
+          "param": "m",
+          "display": "x = 2π/3 + 2πm, m ∈ ℤ"
+        },
+        {
+          "formula": "3*pi/2 + 2*pi*k",
+          "param": "k",
+          "display": "x = 3π/2 + 2πk, k ∈ ℤ"
+        }
+      ]
+    },
+    "part_b": {
+      "roots": [
+        "-5*pi/2",
+        "-5*pi/3"
+      ]
+    },
+    "template_family": "sin_squared_substitution",
+    "solution_template": "Замена t = sin x. Квадратное уравнение t² − (-1 + sqrt(3)/2)t + (-sqrt(3)/2) = 0.",
+    "odz_required": false
+  },
+  "solution_part_a": "Делим на sin x без разбора случая sin x = 0.\nЗамена t = sin x. Квадратное уравнение t² − (-1 + sqrt(3)/2)t + (-sqrt(3)/2) = 0.\nx = π/3 + 2πn, n ∈ Z\nx = 2π/3 + 2πm, m ∈ Z\nx = 3π/2 + 2πk, k ∈ Z\nОтбор на отрезке [-17π/6; -5π/3].",
+  "answer_part_b": "-5*pi/2;-5*pi/3"
+}

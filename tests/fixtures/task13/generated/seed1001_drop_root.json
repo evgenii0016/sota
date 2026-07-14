@@ -1,0 +1,57 @@
+{
+  "name": "seed1001_drop_root",
+  "corruption": "drop_root",
+  "generator_seed": 1001,
+  "expected_score": 1,
+  "actual_part_a_correct": true,
+  "actual_part_b_correct": false,
+  "statement": "а) Решите уравнение -sin x + sin(2x) = 0.\nб) Найдите корни этого уравнения, принадлежащие отрезку [-7π/2; -11π/6].",
+  "metadata": {
+    "equation": {
+      "latex": "- \\sin{\\left(x \\right)} + \\sin{\\left(2 x \\right)} = 0",
+      "sympy": "-sin(x) + sin(2*x)"
+    },
+    "interval": {
+      "left": "-7*pi/2",
+      "right": "-11*pi/6",
+      "type": "closed",
+      "display": "[-7π/2; -11π/6]"
+    },
+    "part_a": {
+      "series": [
+        {
+          "formula": "0 + 2*pi*k",
+          "param": "k",
+          "display": "x = 0 + 2πk, k ∈ ℤ"
+        },
+        {
+          "formula": "pi/3 + 2*pi*l",
+          "param": "l",
+          "display": "x = π/3 + 2πl, l ∈ ℤ"
+        },
+        {
+          "formula": "pi + 2*pi*n",
+          "param": "n",
+          "display": "x = π + 2πn, n ∈ ℤ"
+        },
+        {
+          "formula": "5*pi/3 + 2*pi*m",
+          "param": "m",
+          "display": "x = 5π/3 + 2πm, m ∈ ℤ"
+        }
+      ]
+    },
+    "part_b": {
+      "roots": [
+        "-3*pi",
+        "-7*pi/3",
+        "-2*pi"
+      ]
+    },
+    "template_family": "double_angle",
+    "solution_template": "sin(2x) − 1·sin x = 0 → 2 sin x cos x − 1 sin x = 0.",
+    "odz_required": false
+  },
+  "solution_part_a": "sin(2x) − 1·sin x = 0 → 2 sin x cos x − 1 sin x = 0.\nx = 0 + 2πk, k ∈ Z\nx = π/3 + 2πl, l ∈ Z\nx = π + 2πn, n ∈ Z\nx = 5π/3 + 2πm, m ∈ Z\nОтбор на отрезке [-7π/2; -11π/6].",
+  "answer_part_b": "-7*pi/3;-2*pi"
+}

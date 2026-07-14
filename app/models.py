@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.task13.models import Task13Comment
 from app.validation import validate_student_answer
 
 
@@ -59,6 +60,16 @@ class GradeAttemptView(BaseModel):
     llm_provider: str | None = None
     duration_ms: int | None = None
     created_at: datetime | None = None
+    score: Literal[0, 1, 2] | None = None
+    solution_part_a: str | None = None
+    answer_part_b: str | None = None
+    comments: list[Task13Comment] | None = None
+    part_a_correct: bool | None = None
+    part_b_correct: bool | None = None
+    justified: bool | None = None
+    justified_part_a: bool | None = None
+    justified_part_b: bool | None = None
+    method_errors: list[str] | None = None
 
 
 class AppEventView(BaseModel):

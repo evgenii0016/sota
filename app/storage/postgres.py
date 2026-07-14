@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from sqlalchemy import create_engine, select, text
+from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -35,15 +35,27 @@ class PostgresRepository:
     def _session(self) -> Session:
         return self._session_factory()
 
-    def save_task(self, statement: str, answer: str, task_type: str = "quadratic") -> str:
-        task = Task(statement=statement, answer=answer, task_type=task_type)
+    def save_task(
+        self,
+        statement: str,
+        answer: str,
+        task_type: str = "quadratic",
+        *,
+        metadata: dict[str, Any] | None = None,
+    ) -> str:
+        task = Task(
+            statement=statement,
+            answer=answer,
+            task_type=task_type,
+            task_metadata=metadata or {},
+        )
         with self._session() as session:
             session.add(task)
             session.commit()
             session.refresh(task)
             return str(task.id)
 
-    def get_task(self, task_id: str) -> dict[str, str] | None:
+    def get_task(self, task_id: str) -> dict[str, Any] | None:
         task_uuid = _parse_uuid(task_id)
         if task_uuid is None:
             return None
@@ -56,7 +68,56 @@ class PostgresRepository:
                 "statement": task.statement,
                 "answer": task.answer,
                 "task_type": task.task_type,
+                "metadata": dict(task.task_metadata),
             }
+
+    def count_assistant_uses(self, task_id: str) -> int:
+        task_uuid = _parse_uuid(task_id)
+        if task_uuid is None:
+            return 0
+        with self._session() as session:
+            count = session.scalar(
+                select(func.count())
+                .select_from(AppEvent)
+                .where(
+                    AppEvent.task_id == task_uuid,
+                    AppEvent.event == "task13_assistant",
+                )
+            )
+            return int(count or 0)
+
+    def reserve_assistant_use(self, task_id: str, max_uses: int) -> int | None:
+        """Атомарно зарезервировать обращение, блокируя строку задания."""
+        task_uuid = _parse_uuid(task_id)
+        if task_uuid is None:
+            return None
+        with self._session() as session:
+            task = session.scalar(
+                select(Task).where(Task.id == task_uuid).with_for_update(),
+            )
+            if task is None:
+                return None
+            uses = session.scalar(
+                select(func.count())
+                .select_from(AppEvent)
+                .where(
+                    AppEvent.task_id == task_uuid,
+                    AppEvent.event == "task13_assistant",
+                )
+            )
+            uses_count = int(uses or 0)
+            if uses_count >= max_uses:
+                return None
+            session.add(
+                AppEvent(
+                    level="INFO",
+                    event="task13_assistant",
+                    task_id=task_uuid,
+                    payload={"reserved": True},
+                )
+            )
+            session.commit()
+            return max_uses - uses_count - 1
 
     def save_grade_attempt(
         self,
@@ -67,7 +128,28 @@ class PostgresRepository:
         feedback: str,
         llm_provider: str | None = None,
         duration_ms: int | None = None,
+        score: int | None = None,
+        solution_part_a: str | None = None,
+        answer_part_b: str | None = None,
+        comments: list[dict[str, Any]] | None = None,
+        part_a_correct: bool | None = None,
+        part_b_correct: bool | None = None,
+        justified: bool | None = None,
+        justified_part_a: bool | None = None,
+        justified_part_b: bool | None = None,
+        method_errors: list[str] | None = None,
     ) -> str:
+        grade_meta: dict[str, Any] | None = None
+        if score is not None:
+            grade_meta = {
+                "part_a_correct": part_a_correct,
+                "part_b_correct": part_b_correct,
+                "justified": justified,
+                "justified_part_a": justified_part_a,
+                "justified_part_b": justified_part_b,
+                "method_errors": list(method_errors or []),
+            }
+
         attempt = GradeAttempt(
             task_id=uuid.UUID(task_id),
             student_answer=student_answer,
@@ -75,6 +157,11 @@ class PostgresRepository:
             feedback=feedback,
             llm_provider=llm_provider,
             duration_ms=duration_ms,
+            score=score,
+            solution_part_a=solution_part_a,
+            answer_part_b=answer_part_b,
+            comments=comments,
+            grade_meta=grade_meta,
         )
         with self._session() as session:
             session.add(attempt)
@@ -149,6 +236,7 @@ class PostgresRepository:
 
     @staticmethod
     def _grade_attempt_to_dict(attempt: GradeAttempt) -> dict[str, Any]:
+        meta = dict(attempt.grade_meta) if attempt.grade_meta else {}
         return {
             "id": str(attempt.id),
             "task_id": str(attempt.task_id),
@@ -157,6 +245,16 @@ class PostgresRepository:
             "feedback": attempt.feedback,
             "llm_provider": attempt.llm_provider,
             "duration_ms": attempt.duration_ms,
+            "score": attempt.score,
+            "solution_part_a": attempt.solution_part_a,
+            "answer_part_b": attempt.answer_part_b,
+            "comments": list(attempt.comments) if attempt.comments is not None else None,
+            "part_a_correct": meta.get("part_a_correct"),
+            "part_b_correct": meta.get("part_b_correct"),
+            "justified": meta.get("justified"),
+            "justified_part_a": meta.get("justified_part_a"),
+            "justified_part_b": meta.get("justified_part_b"),
+            "method_errors": meta.get("method_errors"),
             "created_at": attempt.created_at,
         }
 

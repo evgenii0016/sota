@@ -6,9 +6,20 @@ from typing import Any, Protocol
 
 
 class TaskRepository(Protocol):
-    def save_task(self, statement: str, answer: str, task_type: str = "quadratic") -> str: ...
+    def save_task(
+        self,
+        statement: str,
+        answer: str,
+        task_type: str = "quadratic",
+        *,
+        metadata: dict[str, Any] | None = None,
+    ) -> str: ...
 
-    def get_task(self, task_id: str) -> dict[str, str] | None: ...
+    def get_task(self, task_id: str) -> dict[str, Any] | None: ...
+
+    def count_assistant_uses(self, task_id: str) -> int: ...
+
+    def reserve_assistant_use(self, task_id: str, max_uses: int) -> int | None: ...
 
     def save_grade_attempt(
         self,
@@ -19,6 +30,16 @@ class TaskRepository(Protocol):
         feedback: str,
         llm_provider: str | None = None,
         duration_ms: int | None = None,
+        score: int | None = None,
+        solution_part_a: str | None = None,
+        answer_part_b: str | None = None,
+        comments: list[dict[str, Any]] | None = None,
+        part_a_correct: bool | None = None,
+        part_b_correct: bool | None = None,
+        justified: bool | None = None,
+        justified_part_a: bool | None = None,
+        justified_part_b: bool | None = None,
+        method_errors: list[str] | None = None,
     ) -> str: ...
 
     def find_grade_attempt(

@@ -1,0 +1,45 @@
+{
+  "fipi_id": "A1F902",
+  "source": "Открытый банк ФИПИ (профиль), тип: разложение sin·cos; эталон generate_task13(seed=202)",
+  "statement": "а) Решите уравнение sin x·cos x - sin x = 0.\nб) Найдите корни этого уравнения, принадлежащие отрезку [-10π/3; −π/3].",
+  "metadata": {
+    "equation": {
+      "latex": "\\sin{\\left(x \\right)} \\cos{\\left(x \\right)} - \\sin{\\left(x \\right)} = 0",
+      "sympy": "sin(x)*cos(x) - sin(x)"
+    },
+    "interval": {
+      "left": "-10*pi/3",
+      "right": "-pi/3",
+      "type": "closed",
+      "display": "[-10π/3; −π/3]"
+    },
+    "part_a": {
+      "series": [
+        {"formula": "0 + 2*pi*k", "param": "k"},
+        {"formula": "pi + 2*pi*n", "param": "n"}
+      ]
+    },
+    "part_b": {"roots": ["-3*pi", "-2*pi", "-pi"]},
+    "template_family": "sin_cos_product"
+  },
+  "solutions": [
+    {
+      "name": "full_2",
+      "expected_score": 2,
+      "solution_part_a": "Разложение на множители: sin x (cos x - 1) = 0.\nx = 0 + 2πk, k ∈ Z;\nx = pi + 2πn, n ∈ Z.\nОтбор на отрезке [-10π/3; -π/3], границы k и n.",
+      "answer_part_b": "-3*pi; -2*pi; -pi"
+    },
+    {
+      "name": "missing_root_1",
+      "expected_score": 1,
+      "solution_part_a": "x = 0 + 2πk, k ∈ Z;\nx = pi + 2πn, n ∈ Z.\nОтбор на отрезке.",
+      "answer_part_b": "-2*pi; -pi"
+    },
+    {
+      "name": "wrong_series_0",
+      "expected_score": 0,
+      "solution_part_a": "sin x = 0, значит x = pi/6 + 2πk, k ∈ Z.\nОтбор на отрезке.",
+      "answer_part_b": "-pi"
+    }
+  ]
+}

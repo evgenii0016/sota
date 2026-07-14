@@ -1,0 +1,43 @@
+{
+  "fipi_id": "C5E771",
+  "source": "Открытый банк ФИПИ (профиль), тип: cos²; эталон generate_task13(seed=303)",
+  "statement": "а) Решите уравнение cos²x - sqrt(3)·cos x/2 = 0.\nб) Найдите корни этого уравнения, принадлежащие отрезку [-8π/3; -4π/3].",
+  "metadata": {
+    "equation": {
+      "latex": "\\cos^{2}{\\left(x \\right)} - \\frac{\\sqrt{3} \\cos{\\left(x \\right)}}{2} = 0",
+      "sympy": "cos(x)**2 - sqrt(3)*cos(x)/2"
+    },
+    "interval": {
+      "left": "-8*pi/3",
+      "right": "-4*pi/3",
+      "type": "closed",
+      "display": "[-8π/3; -4π/3]"
+    },
+    "part_a": {
+      "series": [
+        {"formula": "pi/6 + 2*pi*m", "param": "m"},
+        {"formula": "pi/2 + 2*pi*k", "param": "k"},
+        {"formula": "3*pi/2 + 2*pi*n", "param": "n"},
+        {"formula": "11*pi/6 + 2*pi*l", "param": "l"}
+      ]
+    },
+    "part_b": {
+      "roots": ["-5*pi/2", "-13*pi/6", "-11*pi/6", "-3*pi/2"]
+    },
+    "template_family": "cos_squared_substitution"
+  },
+  "solutions": [
+    {
+      "name": "full_2",
+      "expected_score": 2,
+      "solution_part_a": "cos x (cos x - sqrt(3)/2) = 0.\nx = pi/6 + 2πm, m ∈ Z;\nx = pi/2 + 2πk, k ∈ Z;\nx = 3*pi/2 + 2πn, n ∈ Z;\nx = 11*pi/6 + 2πl, l ∈ Z.\nОтбор на отрезке [-8π/3; -4π/3].",
+      "answer_part_b": "-5*pi/2; -13*pi/6; -11*pi/6; -3*pi/2"
+    },
+    {
+      "name": "missing_root_1",
+      "expected_score": 1,
+      "solution_part_a": "x = pi/6 + 2πm, m ∈ Z;\nx = pi/2 + 2πk, k ∈ Z;\nx = 3*pi/2 + 2πn, n ∈ Z;\nx = 11*pi/6 + 2πl, l ∈ Z.\nОтбор.",
+      "answer_part_b": "-13*pi/6; -11*pi/6; -3*pi/2"
+    }
+  ]
+}

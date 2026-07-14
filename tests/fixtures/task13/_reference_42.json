@@ -1,0 +1,23 @@
+{
+  "equation": {
+    "latex": "2\\sin^2 x - \\sin x - 1 = 0",
+    "sympy": "2*sin(x)**2 - sin(x) - 1"
+  },
+  "interval": {
+    "left": "-pi",
+    "right": "pi/2",
+    "type": "closed",
+    "display": "[−π; π/2]"
+  },
+  "part_a": {
+    "series": [
+      {"formula": "-pi/2 + 2*pi*k", "param": "k", "display": "x = −π/2 + 2πk, k ∈ ℤ"},
+      {"formula": "pi/6 + 2*pi*n", "param": "n", "display": "x = π/6 + 2πn, n ∈ ℤ"},
+      {"formula": "5*pi/6 + 2*pi*m", "param": "m", "display": "x = 5π/6 + 2πm, m ∈ ℤ"}
+    ]
+  },
+  "part_b": {
+    "roots": ["-pi/2", "pi/6"]
+  },
+  "template_family": "sin_squared_substitution"
+}
