@@ -50,9 +50,13 @@ def _validation_message(error: dict[str, Any]) -> tuple[str, str, str | None]:
     if error_type == "value_error":
         ctx_error = ctx.get("error")
         if isinstance(ctx_error, ValueError):
+            if field in {"solution_part_a", "answer_part_b"}:
+                return "validation_error", str(ctx_error), field
             return "invalid_answer_format", str(ctx_error), field
         if message.startswith("Value error, "):
             message = message.removeprefix("Value error, ")
+        if field in {"solution_part_a", "answer_part_b"}:
+            return "validation_error", message, field
         return "invalid_answer_format", message, field
     if error_type.startswith("greater_than") or error_type.startswith("less_than"):
         return "invalid_query_param", message, field

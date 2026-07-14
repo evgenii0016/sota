@@ -1,0 +1,30 @@
+{
+  "name": "part_b_empty_1",
+  "description": "§4.2: а полностью верно, б не выполнен",
+  "expected_score": 1,
+  "allow_empty_part_b": true,
+  "statement": "а) Решите уравнение 2sin²x − sin x − 1 = 0.\nб) Найдите корни этого уравнения, принадлежащие отрезку [−π; π/2].",
+  "metadata": {
+    "equation": {
+      "latex": "2\\sin^2 x - \\sin x - 1 = 0",
+      "sympy": "2*sin(x)**2 - sin(x) - 1"
+    },
+    "interval": {
+      "left": "-pi",
+      "right": "pi/2",
+      "type": "closed",
+      "display": "[−π; π/2]"
+    },
+    "part_a": {
+      "series": [
+        {"formula": "-pi/2 + 2*pi*k", "param": "k"},
+        {"formula": "pi/6 + 2*pi*n", "param": "n"},
+        {"formula": "5*pi/6 + 2*pi*m", "param": "m"}
+      ]
+    },
+    "part_b": {"roots": ["-pi/2", "pi/6"]},
+    "template_family": "sin_squared_substitution"
+  },
+  "solution_part_a": "Замена t = sin x. 2t² − t − 1 = 0 → t = 1, t = −1/2.\nx = −π/2 + 2πk, k ∈ Z;\nx = π/6 + 2πn, n ∈ Z;\nx = 5π/6 + 2πm, m ∈ Z.",
+  "answer_part_b": ""
+}

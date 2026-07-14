@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 import uuid
 from datetime import UTC, datetime
 from typing import Any
@@ -11,24 +12,62 @@ from app.task_types import is_extended_task_type
 
 class MemoryRepository:
     def __init__(self) -> None:
-        self._tasks: dict[str, dict[str, str]] = {}
+        self._tasks: dict[str, dict[str, Any]] = {}
         self._examples: dict[str, dict[str, str]] = {}
         self._grade_attempts: list[dict[str, Any]] = []
         self._events: list[dict[str, Any]] = []
         self._next_event_id = 1
+        self._assistant_uses_lock = threading.Lock()
 
-    def save_task(self, statement: str, answer: str, task_type: str = "quadratic") -> str:
+    def save_task(
+        self,
+        statement: str,
+        answer: str,
+        task_type: str = "quadratic",
+        *,
+        metadata: dict[str, Any] | None = None,
+    ) -> str:
         task_id = str(uuid.uuid4())
         self._tasks[task_id] = {
             "id": task_id,
             "statement": statement,
             "answer": answer,
             "task_type": task_type,
+            "metadata": metadata or {},
         }
         return task_id
 
-    def get_task(self, task_id: str) -> dict[str, str] | None:
-        return self._tasks.get(task_id)
+    def get_task(self, task_id: str) -> dict[str, Any] | None:
+        task = self._tasks.get(task_id)
+        if task is None:
+            return None
+        return dict(task)
+
+    def count_assistant_uses(self, task_id: str) -> int:
+        return sum(
+            1
+            for item in self._events
+            if item.get("task_id") == task_id and item.get("event") == "task13_assistant"
+        )
+
+    def reserve_assistant_use(self, task_id: str, max_uses: int) -> int | None:
+        """Атомарно зарезервировать обращение к помощнику."""
+        with self._assistant_uses_lock:
+            uses = self.count_assistant_uses(task_id)
+            if uses >= max_uses:
+                return None
+            self._events.append(
+                {
+                    "id": self._next_event_id,
+                    "level": "INFO",
+                    "event": "task13_assistant",
+                    "task_id": task_id,
+                    "payload": {"reserved": True},
+                    "created_at": datetime.now(UTC),
+                }
+            )
+            self._next_event_id += 1
+            return max_uses - uses - 1
 
     def save_grade_attempt(
         self,
@@ -39,6 +78,16 @@ class MemoryRepository:
         feedback: str,
         llm_provider: str | None = None,
         duration_ms: int | None = None,
+        score: int | None = None,
+        solution_part_a: str | None = None,
+        answer_part_b: str | None = None,
+        comments: list[dict[str, Any]] | None = None,
+        part_a_correct: bool | None = None,
+        part_b_correct: bool | None = None,
+        justified: bool | None = None,
+        justified_part_a: bool | None = None,
+        justified_part_b: bool | None = None,
+        method_errors: list[str] | None = None,
     ) -> str:
         attempt_id = str(uuid.uuid4())
         self._grade_attempts.append(
@@ -50,6 +99,16 @@ class MemoryRepository:
                 "feedback": feedback,
                 "llm_provider": llm_provider,
                 "duration_ms": duration_ms,
+                "score": score,
+                "solution_part_a": solution_part_a,
+                "answer_part_b": answer_part_b,
+                "comments": comments,
+                "part_a_correct": part_a_correct,
+                "part_b_correct": part_b_correct,
+                "justified": justified,
+                "justified_part_a": justified_part_a,
+                "justified_part_b": justified_part_b,
+                "method_errors": method_errors,
                 "created_at": datetime.now(UTC),
             }
         )

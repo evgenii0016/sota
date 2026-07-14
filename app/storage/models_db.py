@@ -22,6 +22,12 @@ class Task(Base):
     task_type: Mapped[str] = mapped_column(String(32), nullable=False, default="quadratic")
     statement: Mapped[str] = mapped_column(Text, nullable=False)
     answer: Mapped[str] = mapped_column(Text, nullable=False)
+    task_metadata: Mapped[dict[str, Any]] = mapped_column(
+        "metadata",
+        JSONB,
+        nullable=False,
+        server_default="{}",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -41,6 +47,11 @@ class GradeAttempt(Base):
     feedback: Mapped[str] = mapped_column(Text, nullable=False)
     llm_provider: Mapped[str | None] = mapped_column(String(32))
     duration_ms: Mapped[int | None] = mapped_column(Integer)
+    score: Mapped[int | None] = mapped_column(Integer)
+    solution_part_a: Mapped[str | None] = mapped_column(Text)
+    answer_part_b: Mapped[str | None] = mapped_column(Text)
+    comments: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
+    grade_meta: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

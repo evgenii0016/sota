@@ -53,6 +53,22 @@ GENERATION_ATTEMPTS_TOTAL = Counter(
     ["outcome"],
 )
 
+TASK13_GENERATION_SUCCESS_TOTAL = Counter(
+    "ege_grader_task13_generation_success_total",
+    "Успешная генерация задания 13",
+)
+
+TASK13_GENERATION_EXHAUSTED_TOTAL = Counter(
+    "ege_grader_task13_generation_exhausted_total",
+    "Исчерпаны попытки генерации задания 13",
+)
+
+TASK13_ASSISTANT_TOTAL = Counter(
+    "ege_grader_task13_assistant_total",
+    "Обращения к ИИ-помощнику задания 13",
+    ["outcome"],
+)
+
 HTTP_REQUESTS_TOTAL = Counter(
     "ege_grader_http_requests_total",
     "HTTP-запросы к API",
@@ -100,6 +116,18 @@ def record_validation_error(code: str) -> None:
 
 def record_generation_attempt(outcome: str) -> None:
     GENERATION_ATTEMPTS_TOTAL.labels(outcome=outcome).inc()
+
+
+def record_task13_generation_success() -> None:
+    TASK13_GENERATION_SUCCESS_TOTAL.inc()
+
+
+def record_task13_generation_exhausted() -> None:
+    TASK13_GENERATION_EXHAUSTED_TOTAL.inc()
+
+
+def record_task13_assistant(*, outcome: str) -> None:
+    TASK13_ASSISTANT_TOTAL.labels(outcome=outcome).inc()
 
 
 def record_http_request(

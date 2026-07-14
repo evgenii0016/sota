@@ -6,11 +6,12 @@ from typing import Literal
 
 from app.config import get_settings
 
-TaskType = Literal["quadratic", "linear", "rational"]
+TaskType = Literal["quadratic", "linear", "rational", "task_13"]
 
 STANDARD_TASK_TYPES: frozenset[str] = frozenset({"quadratic"})
 EXTENDED_TASK_TYPES: frozenset[str] = frozenset({"linear", "rational"})
-ALL_TASK_TYPES: frozenset[str] = STANDARD_TASK_TYPES | EXTENDED_TASK_TYPES
+TASK_13_TYPES: frozenset[str] = frozenset({"task_13"})
+ALL_TASK_TYPES: frozenset[str] = STANDARD_TASK_TYPES | EXTENDED_TASK_TYPES | TASK_13_TYPES
 
 
 def is_extended_task_type(task_type: str) -> bool:

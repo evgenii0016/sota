@@ -1,0 +1,45 @@
+{
+  "fipi_id": "E42B19",
+  "source": "Открытый банк ФИПИ (профиль), тип: sin(2x); эталон generate_task13(seed=505)",
+  "statement": "а) Решите уравнение -2sin x + sin(2x) = 0.\nб) Найдите корни этого уравнения, принадлежащие отрезку [-19π/6; -2π].",
+  "metadata": {
+    "equation": {
+      "latex": "- 2 \\sin{\\left(x \\right)} + \\sin{\\left(2 x \\right)} = 0",
+      "sympy": "-2*sin(x) + sin(2*x)"
+    },
+    "interval": {
+      "left": "-19*pi/6",
+      "right": "-2*pi",
+      "type": "closed",
+      "display": "[-19π/6; -2π]"
+    },
+    "part_a": {
+      "series": [
+        {"formula": "0 + 2*pi*k", "param": "k"},
+        {"formula": "pi + 2*pi*n", "param": "n"}
+      ]
+    },
+    "part_b": {"roots": ["-3*pi", "-2*pi"]},
+    "template_family": "double_angle"
+  },
+  "solutions": [
+    {
+      "name": "full_2",
+      "expected_score": 2,
+      "solution_part_a": "sin(2x) = 2 sin x cos x, уравнение: sin x (cos x - 1) = 0.\nx = 0 + 2πk, k ∈ Z;\nx = pi + 2πn, n ∈ Z.\nОтбор на отрезке [-19π/6; -2π].",
+      "answer_part_b": "-3*pi; -2*pi"
+    },
+    {
+      "name": "divide_sin_0",
+      "expected_score": 0,
+      "solution_part_a": "Делим на sin x, получаем -2 + 2 cos x = 0.\nx = pi + 2πn, n ∈ Z.",
+      "answer_part_b": "-3*pi; -2*pi"
+    },
+    {
+      "name": "bare_0",
+      "expected_score": 0,
+      "solution_part_a": "-3*pi; -2*pi",
+      "answer_part_b": "-3*pi; -2*pi"
+    }
+  ]
+}

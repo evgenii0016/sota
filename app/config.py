@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     metrics_enabled: bool = True
     extended_examples_key: str | None = None
+    assistant_max_uses: int = 5
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [item.strip() for item in self.cors_origins.split(",") if item.strip()]
 
     @field_validator("extended_examples_key", mode="before")
     @classmethod

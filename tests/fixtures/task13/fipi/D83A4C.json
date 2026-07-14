@@ -1,0 +1,46 @@
+{
+  "fipi_id": "D83A4C",
+  "source": "Открытый банк ФИПИ (профиль), тип: sin² + cos; эталон пересчитан generate_task13(seed=101)",
+  "statement": "а) Решите уравнение 2sin²x - cos x - 1 = 0.\nб) Найдите корни этого уравнения, принадлежащие отрезку [-4π/3; −π/6].",
+  "metadata": {
+    "equation": {
+      "latex": "2 \\sin^{2}{\\left(x \\right)} - \\cos{\\left(x \\right)} - 1 = 0",
+      "sympy": "2*sin(x)**2 - cos(x) - 1"
+    },
+    "interval": {
+      "left": "-4*pi/3",
+      "right": "-pi/6",
+      "type": "closed",
+      "display": "[-4π/3; −π/6]"
+    },
+    "part_a": {
+      "series": [
+        {"formula": "pi/3 + 2*pi*m", "param": "m"},
+        {"formula": "pi + 2*pi*k", "param": "k"},
+        {"formula": "5*pi/3 + 2*pi*n", "param": "n"}
+      ]
+    },
+    "part_b": {"roots": ["-pi", "-pi/3"]},
+    "template_family": "sin_squared_substitution"
+  },
+  "solutions": [
+    {
+      "name": "full_2",
+      "expected_score": 2,
+      "solution_part_a": "Замена sin²x = 1 - cos²x, получаем 2 cos²x + cos x - 1 = 0.\nx = pi/3 + 2πm, m ∈ Z;\nx = pi + 2πk, k ∈ Z;\nx = 5*pi/3 + 2πn, n ∈ Z.\nОтбор на отрезке [-4π/3; -π/6].",
+      "answer_part_b": "-pi; -pi/3"
+    },
+    {
+      "name": "missing_root_1",
+      "expected_score": 1,
+      "solution_part_a": "x = pi/3 + 2πm, m ∈ Z;\nx = pi + 2πk, k ∈ Z;\nx = 5*pi/3 + 2πn, n ∈ Z.\nОтбор на отрезке.",
+      "answer_part_b": "-pi/3"
+    },
+    {
+      "name": "bare_0",
+      "expected_score": 0,
+      "solution_part_a": "x = pi/3 + 2πm, m ∈ Z; x = pi + 2πk, k ∈ Z.",
+      "answer_part_b": "-pi; -pi/3"
+    }
+  ]
+}
